@@ -796,9 +796,15 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AI Code Review Server listening on port ${PORT}`);
-  });
+  // Skip listening if running on Vercel or Serverless adapter environments
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`AI Code Review Server listening on port ${PORT}`);
+    });
+  }
 }
 
 startServer();
+
+export default app;
+
