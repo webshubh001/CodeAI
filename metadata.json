@@ -1,0 +1,6 @@
+{
+  "name": "CodePilot",
+  "description": "An AI-powered agent for real-time pull request analysis, bug detection, security checks, and automated review reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
