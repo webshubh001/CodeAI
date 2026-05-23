@@ -106,6 +106,23 @@ function calculateTotal(price, tax, ipAddress) {
     }
   }, [provider]);
 
+  // Helper to safely parse JSON from a response and avoid cryptic unexpected token exceptions
+  const safeResponseJson = async (res: Response, fallbackMessage: string) => {
+    const rawText = await res.text();
+    try {
+      return JSON.parse(rawText);
+    } catch (e) {
+      const trimmed = rawText.trim();
+      let displayError = fallbackMessage;
+      if (trimmed && !trimmed.startsWith('<!doctype') && !trimmed.startsWith('<html')) {
+        displayError = trimmed.substring(0, 200);
+      } else {
+        displayError = `${fallbackMessage} (Status ${res.status})`;
+      }
+      return { error: displayError };
+    }
+  };
+
   // Fetch repositories from express server proxy
   const fetchRepos = async () => {
     setRepos([]);
@@ -134,11 +151,11 @@ function calculateTotal(price, tax, ipAddress) {
       clearTimeout(loaderTimeout);
 
       if (!response.ok) {
-        const errObj = await response.json();
+        const errObj = await safeResponseJson(response, 'Failed to authenticate and fetch repositories.');
         throw new Error(errObj.error || 'Failed to authenticate and fetch repositories.');
       }
 
-      const data = await response.json();
+      const data = await safeResponseJson(response, 'Failed to authenticate and fetch repositories.');
       setRepos(data.repos || []);
       
       // Auto-select first sandbox repo for instant demo feel
@@ -187,10 +204,11 @@ function calculateTotal(price, tax, ipAddress) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch open pull resources.');
+        const errObj = await safeResponseJson(response, 'Failed to fetch open pull resources.');
+        throw new Error(errObj.error || 'Failed to fetch open pull resources.');
       }
 
-      const data = await response.json();
+      const data = await safeResponseJson(response, 'Failed to fetch open pull resources.');
       setPulls(data.pulls || []);
 
       // Auto-select first PR in Sandbox for zero-click interaction
@@ -234,10 +252,11 @@ function calculateTotal(price, tax, ipAddress) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to retrieve file list from pull request.');
+        const errObj = await safeResponseJson(response, 'Failed to retrieve file list from pull request.');
+        throw new Error(errObj.error || 'Failed to retrieve file list from pull request.');
       }
 
-      const data = await response.json();
+      const data = await safeResponseJson(response, 'Failed to retrieve file list from pull request.');
       setFiles(data.files || []);
 
       // Auto-select first changed file in sandbox & run auto-review audit trace!
@@ -287,11 +306,11 @@ function calculateTotal(price, tax, ipAddress) {
       });
 
       if (!resp.ok) {
-        const errObj = await resp.json();
+        const errObj = await safeResponseJson(resp, 'Gemini review compilation failed.');
         throw new Error(errObj.error || 'Gemini review compilation failed.');
       }
 
-      const reportData: ReviewReport = await resp.json();
+      const reportData: ReviewReport = await safeResponseJson(resp, 'Gemini review compilation failed.');
       
       // Assign IDs to comments if they aren't provided to prevent duplicate references
       if (reportData && reportData.comments) {
@@ -347,11 +366,11 @@ function calculateTotal(price, tax, ipAddress) {
       });
 
       if (!resp.ok) {
-        const errObj = await resp.json();
+        const errObj = await safeResponseJson(resp, 'Gemini report refinement compilation failed.');
         throw new Error(errObj.error || 'Gemini report refinement compilation failed.');
       }
 
-      const reportData: ReviewReport = await resp.json();
+      const reportData: ReviewReport = await safeResponseJson(resp, 'Gemini report refinement compilation failed.');
       
       // Ensure comments have a guaranteed unique client-side ID
       if (reportData && reportData.comments) {
@@ -415,11 +434,11 @@ function calculateTotal(price, tax, ipAddress) {
       });
 
       if (!resp.ok) {
-        const errObj = await resp.json();
+        const errObj = await safeResponseJson(resp, 'Drill down analysis compiler failed.');
         throw new Error(errObj.error || 'Drill down analysis compiler failed.');
       }
 
-      const drillData = await resp.json();
+      const drillData = await safeResponseJson(resp, 'Drill down analysis compiler failed.');
       setDrillDowns(prev => ({ ...prev, [commentId]: drillData }));
       
       if (isFollowUp) {
